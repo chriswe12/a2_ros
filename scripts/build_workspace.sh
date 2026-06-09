@@ -8,6 +8,8 @@ source ./scripts/common.sh
 # Build workspace (builds inside the repo directory)
 # Venv must NOT be active here — colcon needs system Python.
 # ---------------------------------------------------------------
+bash ./scripts/patch_unitree.sh
+
 info "Building workspace..."
 source /opt/ros/jazzy/setup.bash
 cd "$WORKSPACE_DIR"
