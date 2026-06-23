@@ -9,7 +9,8 @@ from copy import deepcopy
 import numpy as np
 from dataclasses import dataclass
 from geometry_msgs.msg import Point
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty as EmptySrv
+from std_msgs.msg import Empty
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 # N_OBJECTS_FOUND_TARGET = 3
@@ -81,7 +82,7 @@ class MissionControlNode(Node):
 
         # services
         self.client = self.create_client(
-            Empty, "/save_map", callback_group=MutuallyExclusiveCallbackGroup()
+            EmptySrv, "/save_map", callback_group=MutuallyExclusiveCallbackGroup()
         )
         while not self.client.wait_for_service(timeout_sec=5.0):
             self.get_logger().info("Waiting for /save_map service...")
