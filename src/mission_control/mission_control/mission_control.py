@@ -9,8 +9,10 @@ from copy import deepcopy
 import numpy as np
 from dataclasses import dataclass
 from geometry_msgs.msg import Point
+from std_srvs.srv import Empty
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
-N_OBJECTS_FOUND_TARGET = 3
+# N_OBJECTS_FOUND_TARGET = 3
 MISSION_TIMEOUT_S = 60.0
 TARGET_REACHE_THRESH = 2.0
 
@@ -63,6 +65,9 @@ class MissionControlNode(Node):
         self.sub_goal = self.create_subscription(
             PointStamped, "/goal_point", self.goal_callback, 10
         )
+        self.sub_map_save_trigger = self.create_subscription(
+            Empty, "/save_map_trigger", self.save_map_callback, 10
+        )
         # TODO: detection sub
 
         # pubs
@@ -71,6 +76,14 @@ class MissionControlNode(Node):
         )  # TODO: check because there is also a goal point topic
         self.pub_goalpoint = self.create_publisher(PointStamped, "/goal_point", 10)
 
+        # services
+        self.client = self.create_client(
+            Empty, "/save_map", callback_group=MutuallyExclusiveCallbackGroup()
+        )
+        while not self.client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().info("Waiting for /save_map service...")
+
+        # timers
         self.timer = self.create_timer(0.1, self.state_machine_callback)
 
     def state_machine_callback(self):
@@ -98,10 +111,10 @@ class MissionControlNode(Node):
 
         elif self.state == RobotState.EXPLORING:
             elapsed = (self.get_clock().now() - self.start_time).nanoseconds / 1e9
-            if self.n_detected_objects >= N_OBJECTS_FOUND_TARGET:
-                self.get_logger().info("Found enough objects, returning home.")
-                new_state = RobotState.RETURNING
-            elif elapsed > MISSION_TIMEOUT_S:
+            # if self.n_detected_objects >= N_OBJECTS_FOUND_TARGET:
+            #     self.get_logger().info("Found enough objects, returning home.")
+            #     new_state = RobotState.RETURNING
+            if elapsed > MISSION_TIMEOUT_S:
                 self.get_logger().info("Mission timed out, returning home.")
                 new_state = RobotState.RETURNING
 
@@ -128,11 +141,13 @@ class MissionControlNode(Node):
                 self.pub_waypoint.publish(self.last_waypoint_far)
             if self.home_position is not None:
                 self.trigger_nav(self.home_position)
+            self.send_save_map_request()
         elif self.state == RobotState.EXPLORING:
             self.target_point = None  # Clear target point when exploring
             if self.last_waypoint_tare is not None:
                 self.pub_waypoint.publish(self.last_waypoint_tare)
         elif self.state == RobotState.DONE:
+            self.send_save_map_request()
             self.get_logger().warn("Mission complete!")
 
     def odom_callback(self, msg: Odometry):
@@ -157,6 +172,9 @@ class MissionControlNode(Node):
     def detection_callback(self, msg):
         # TODO
         pass
+
+    def save_map_callback(self, msg):
+        self.send_save_map_request()
 
     def tare_waypoint_callback(self, msg: PointStamped):
         self.last_waypoint_tare = msg
@@ -194,6 +212,20 @@ class MissionControlNode(Node):
         else:
             # TODO: autonomous target selection logic (e.g., from detected objects)
             pass
+
+    def send_save_map_request(self):
+        req = Empty.Request()
+        future = self.client.call_async(req)
+        future.add_done_callback(self.save_map_response_callback)
+
+        self.get_logger().info("Sent request to save map...")
+
+    def save_map_response_callback(self, future):
+        try:
+            response = future.result()
+            self.get_logger().info("Map saved successfully.")
+        except Exception as e:
+            self.get_logger().error(f"Failed to save map: {e}")
 
 
 def main(args=None):

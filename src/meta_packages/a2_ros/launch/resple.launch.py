@@ -20,6 +20,10 @@ from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+from datetime import datetime
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+pcd_path = f"/a2_ros/bags/maps/global_map_{timestamp}.pcd"
 
 
 def generate_launch_description():
@@ -63,7 +67,7 @@ def generate_launch_description():
             name='MapSaving',
             emulate_tty=True,
             output='both',
-            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool)}],
+            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool), 'pcd_save_path': pcd_path}],
             arguments=['--ros-args', '--log-level', 'INFO'],
             condition=IfCondition(map_saving_node),
         ),
