@@ -231,6 +231,7 @@ def generate_launch_description():
                 ('/terrain_cloud',      '/terrain_map_ext'),
                 ('/scan_cloud',         '/registered_scan'),
                 ('/terrain_local_cloud','/terrain_map'),
+                ('/way_point',           '/way_point_far'),
             ],
         ),
 
