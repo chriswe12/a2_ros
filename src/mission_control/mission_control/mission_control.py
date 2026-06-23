@@ -13,10 +13,6 @@ from std_srvs.srv import Empty as EmptySrv
 from std_msgs.msg import Empty
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
-# N_OBJECTS_FOUND_TARGET = 3
-MISSION_TIMEOUT_S = 60.0
-TARGET_REACHE_THRESH = 2.0
-
 
 class RobotState(Enum):
     IDLE = 0
@@ -38,6 +34,12 @@ class MissionControlNode(Node):
     def __init__(self):
         super().__init__("mission_control_node")
         self.get_logger().info("Starting mission control...")
+
+        # params
+        self.declare_parameter("mission_timeout_s", 120.0)
+        self.declare_parameter("target_reach_thresh", 2.0)
+        self.mission_timeout_s = float(self.get_parameter("mission_timeout_s").value)  # type: ignore
+        self.target_reach_thresh = float(self.get_parameter("target_reach_thresh").value)  # type: ignore
 
         # state
         self.state = RobotState.IDLE
@@ -118,7 +120,7 @@ class MissionControlNode(Node):
             # if self.n_detected_objects >= N_OBJECTS_FOUND_TARGET:
             #     self.get_logger().info("Found enough objects, returning home.")
             #     new_state = RobotState.RETURNING
-            if elapsed > MISSION_TIMEOUT_S:
+            if elapsed > self.mission_timeout_s:
                 self.get_logger().info("Mission timed out, returning home.")
                 new_state = RobotState.RETURNING
 
@@ -208,7 +210,7 @@ class MissionControlNode(Node):
         if current is None or target is None:
             return False
         dist = np.linalg.norm(np.array([current.x - target.x, current.y - target.y]))
-        return dist < TARGET_REACHE_THRESH
+        return dist < self.target_reach_thresh
 
     def is_home(self):
         return self._is_at_position(self.current_position, self.home_position)
