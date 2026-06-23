@@ -13,9 +13,6 @@ from geometry_msgs.msg import Point
 N_OBJECTS_FOUND_TARGET = 3
 MISSION_TIMEOUT_S = 60.0
 TARGET_REACHE_THRESH = 2.0
-MODE_SWITCH_INTERVAL_S = (
-    20.0  # Switch between exploration and target navigation for testing
-)
 
 
 class RobotState(Enum):
@@ -63,6 +60,9 @@ class MissionControlNode(Node):
         self.sub_waypoints_FAR = self.create_subscription(
             PointStamped, "/way_point_far", self.far_waypoint_callback, 10
         )
+        self.sub_goal = self.create_subscription(
+            PointStamped, "/goal_point", self.goal_callback, 10
+        )
         # TODO: detection sub
 
         # pubs
@@ -95,18 +95,6 @@ class MissionControlNode(Node):
             if self.target_point is not None and self.is_at_target():
                 self.get_logger().info("Reached target point.")
                 new_state = RobotState.EXPLORING
-                self.last_mode_switch_time = self.get_clock().now()
-            else:
-                # Timer-based mode switching every 20 seconds
-                time_since_switch = (
-                    self.get_clock().now() - self.last_mode_switch_time
-                ).nanoseconds / 1e9
-                if time_since_switch >= MODE_SWITCH_INTERVAL_S:
-                    self.get_logger().info(
-                        "Switching back to EXPLORING mode (timer-based)."
-                    )
-                    new_state = RobotState.EXPLORING
-                    self.last_mode_switch_time = self.get_clock().now()
 
         elif self.state == RobotState.EXPLORING:
             elapsed = (self.get_clock().now() - self.start_time).nanoseconds / 1e9
@@ -116,17 +104,6 @@ class MissionControlNode(Node):
             elif elapsed > MISSION_TIMEOUT_S:
                 self.get_logger().info("Mission timed out, returning home.")
                 new_state = RobotState.RETURNING
-            else:
-                # Timer-based mode switching every 20 seconds
-                time_since_switch = (
-                    self.get_clock().now() - self.last_mode_switch_time
-                ).nanoseconds / 1e9
-                if time_since_switch >= MODE_SWITCH_INTERVAL_S:
-                    self.get_logger().info(
-                        "Switching to TARGET_NAVIGATION mode (timer-based)."
-                    )
-                    new_state = RobotState.TARGET_NAVIGATION
-                    self.last_mode_switch_time = self.get_clock().now()
 
         # ! only does stuff on state transition
         if new_state != self.state:
@@ -164,6 +141,19 @@ class MissionControlNode(Node):
             self.home_position = deepcopy(self.current_position)
             self.get_logger().info(f"Home position saved: {self.home_position}")
 
+    def goal_callback(self, msg: PointStamped):
+        self.get_logger().info(
+            "Received external goal_point → switching to TARGET_NAVIGATION"
+        )
+        self.target_point = msg.point
+        # ! force state transition
+        if self.state == RobotState.EXPLORING:
+            self.state = RobotState.TARGET_NAVIGATION
+            self.target_point = msg.point
+            self.get_logger().info(
+                f"Switching to TARGET_NAVIGATION with goal: {self.target_point}"
+            )
+
     def detection_callback(self, msg):
         # TODO
         pass
@@ -199,18 +189,11 @@ class MissionControlNode(Node):
         return self._is_at_position(self.current_position, self.target_point)
 
     def get_nav_goal(self):
-        # TODO: should be based on detections, for now random to test
-        if self.current_position is None:
-            self.get_logger().warn(
-                "Current position unknown, cannot generate nav goal."
-            )
-            return None
-        target = Point()
-        r = 5.0
-        target.x = self.current_position.x + np.random.uniform(-r, r)
-        target.y = self.current_position.y + np.random.uniform(-r, r)
-        target.z = self.current_position.z  # Keep the same z
-        return target
+        if self.target_point is not None:
+            return self.target_point  # Use the externally set target point if available
+        else:
+            # TODO: autonomous target selection logic (e.g., from detected objects)
+            pass
 
 
 def main(args=None):
