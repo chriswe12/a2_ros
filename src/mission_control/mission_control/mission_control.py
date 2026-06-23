@@ -224,7 +224,7 @@ class MissionControlNode(Node):
             pass
 
     def send_save_map_request(self):
-        req = Empty.Request()
+        req = EmptySrv.Request()
         future = self.client.call_async(req)
         future.add_done_callback(self.save_map_response_callback)
 
