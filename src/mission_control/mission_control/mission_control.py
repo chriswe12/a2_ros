@@ -68,6 +68,9 @@ class MissionControlNode(Node):
         self.sub_map_save_trigger = self.create_subscription(
             Empty, "/save_map_trigger", self.save_map_callback, 10
         )
+        self.sub_return_trigger = self.create_subscription(
+            Empty, "/return_home_trigger", self.return_home_callback, 10
+        )
         # TODO: detection sub
 
         # pubs
@@ -168,6 +171,12 @@ class MissionControlNode(Node):
             self.get_logger().info(
                 f"Switching to TARGET_NAVIGATION with goal: {self.target_point}"
             )
+
+    def return_home_callback(self, msg):
+        self.get_logger().info("Received return_home_trigger → switching to RETURNING")
+        if self.state != RobotState.RETURNING:
+            self.state = RobotState.RETURNING
+            self.on_state_change()  # Force state change action
 
     def detection_callback(self, msg):
         # TODO
