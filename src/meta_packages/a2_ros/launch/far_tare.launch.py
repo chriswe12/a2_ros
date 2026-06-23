@@ -247,12 +247,12 @@ def generate_launch_description():
             parameters=[{"use_sim_time": False}],
             condition=IfCondition(LaunchConfiguration("rviz")),
         ),
-        Node(
-            package="mission_control",
-            executable="mission_control",
-            name="mission_control",
-            output="screen",
-        ),
+        # Node(
+        #     package="mission_control",
+        #     executable="mission_control",
+        #     name="mission_control",
+        #     output="screen",
+        # ),
     ]
 
     return LaunchDescription(nodes)
