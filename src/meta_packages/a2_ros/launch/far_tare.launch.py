@@ -1,35 +1,31 @@
 """
-Navigation stack launch for A2 simulation.
+Autonomous exploration launch for A2 simulation using TARE planner.
 
-Starts the CMU Autonomous Exploration stack on top of the running sim:
+Starts the full exploration stack on top of the running sim:
   - terrain_analysis     : builds /terrain_map from /registered_scan + /state_estimation
-  - terrain_analysis_ext : builds /terrain_map_ext (global terrain for far_planner)
-  - local_planner        : obstacle-aware path selection + path follower
-  - far_planner          : global visibility-graph planner
+  - terrain_analysis_ext : builds /terrain_map_ext (global terrain)
+  - local_planner        : obstacle-aware path selection
+  - pathFollower         : converts waypoints to velocity, /nav_vel (twist_mux input)
+  - tare_planner         : autonomous coverage exploration (replaces far_planner)
 
 Prerequisites (provided by sim.launch.py + a2_bridge):
-  /state_estimation  - ground-truth odometry (published by a2_bridge_sim in a2_unitree_bridge)
-  /registered_scan   - world-frame lidar cloud (published by a2_bridge_sim in a2_unitree_bridge)
-  /clock             - sim time clock (published by a2_bridge_sim in a2_unitree_bridge)
+  /state_estimation  - ground-truth odometry (published by a2_bridge in a2_sim_utils)
+  /registered_scan   - world-frame lidar cloud (published by a2_bridge in a2_sim_utils)
+  /clock             - sim time clock (published by sim_clock in a2_sim_utils)
 
 Usage:
   # Terminal 1
-  ros2 launch a2_ros sim.launch.py
+  ros2 launch a2_ros sim.launch.py scene:=scene_obstacles.xml
 
-  # Terminal 2 (after sim is up)
-  ros2 launch a2_ros navigation.launch.py
+  # Terminal 2
+  cd src/control/a2_locomotion_controller/scripts
+  ./control_mode.sh --stand
+  ./control_mode.sh --walk
 
-  # Then bring the robot up to locomotion. These go through the /a2/set_mode
-  # service (via the `a2` CLI), which reports whether each transition was
-  # accepted by the FSM:
-  a2 stand    # mode 2: stand up
-  a2 unlock   # mode 3: unlock joints (balance stand)
-  a2 walk     # mode 4: locomotion
+  # Terminal 3
+  ros2 launch a2_ros exploration.launch.py rviz:=true
 
-  # Send a navigation goal in RViz using the 'Goalpoint' button,
-  # or publish directly:
-  ros2 topic pub /way_point geometry_msgs/msg/PointStamped \
-    "{header: {frame_id: 'odom'}, point: {x: 5.0, y: 0.0, z: 0.0}}"
+The robot will begin exploring autonomously.
 """
 
 import os
@@ -42,22 +38,20 @@ from launch_ros.actions import Node, SetParameter
 
 
 def generate_launch_description():
-    description_dir = get_package_share_directory('a2_description')
-    a2_ros_dir      = get_package_share_directory('a2_ros')
-    rviz_path       = os.path.join(a2_ros_dir, 'rviz', 'navigation.rviz')
-    far_config      = os.path.join(a2_ros_dir, 'config', 'autonomy', 'far_a2.yaml')
+    description_dir = get_package_share_directory("a2_description")
+    a2_ros_dir = get_package_share_directory("a2_ros")
+    rviz_tare_path = os.path.join(a2_ros_dir, "rviz", "exploration.rviz")
+    rviz_far_path = os.path.join(a2_ros_dir, "rviz", "navigation.rviz")
+    far_config = os.path.join(a2_ros_dir, "config", "autonomy", "far_a2.yaml")
+    tare_config = os.path.join(a2_ros_dir, "config", "autonomy", "tare_a2.yaml")
 
     rviz_arg = DeclareLaunchArgument(
-        'rviz',
-        default_value='false',
-        description='Launch RViz2 with navigation config'
+        "rviz", default_value="true", description="Launch RViz2"
     )
 
     nodes = [
         rviz_arg,
-        # Use sim time for all navigation nodes
-        SetParameter(name='use_sim_time', value=False),
-
+        SetParameter(name="use_sim_time", value=False),
         # ---- terrain analysis (local map) ----
         Node(
             package='terrain_analysis',
@@ -207,52 +201,58 @@ def generate_launch_description():
                 'joyToSpeedDelay':  2.0,
             }],
         ),
-
-        # Node(
-        #     package='a2_ros',
-        #     executable='nav_vel_relay',
-        #     name='nav_vel_relay',
-        #     output='screen',
-        # ),
-
+        # ---- TARE planner (autonomous exploration) ----
+        Node(
+            package="tare_planner",
+            executable="tare_planner_node",
+            name="tare_planner_node",
+            output="screen",
+            parameters=[tare_config],
+        ),
         # ---- far_planner (global visibility-graph planner) ----
         Node(
-            package='far_planner',
-            executable='far_planner',
-            name='far_planner',
-            output='screen',
+            package="far_planner",
+            executable="far_planner",
+            name="far_planner",
+            output="screen",
             # Run headless: no X display in container/SSH, so force Qt offscreen
             # to avoid the xcb plugin aborting (SIGABRT). Planning still works;
             # use RViz instead of the FAR Planner GUI for visualization.
-            additional_env={'QT_QPA_PLATFORM': 'offscreen'},
+            additional_env={"QT_QPA_PLATFORM": "offscreen"},
             parameters=[far_config],
             remappings=[
-                ('/odom_world',         '/state_estimation'),
-                ('/terrain_cloud',      '/terrain_map_ext'),
-                ('/scan_cloud',         '/registered_scan'),
-                ('/terrain_local_cloud','/terrain_map'),
-                ('/way_point',           '/way_point_far'),
+                ("/odom_world", "/state_estimation"),
+                ("/terrain_cloud", "/terrain_map_ext"),
+                ("/scan_cloud", "/registered_scan"),
+                ("/terrain_local_cloud", "/terrain_map"),
+                ("/way_point", "/way_point_far"),
             ],
         ),
-
-        # ---- RViz with navigation config ----
+        # ---- RViz ----
         Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            output='screen',
-            arguments=['-d', rviz_path],
-            parameters=[{'use_sim_time': False}],
-            condition=IfCondition(LaunchConfiguration('rviz')),
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            arguments=["-d", rviz_tare_path],
+            parameters=[{"use_sim_time": False}],
+            condition=IfCondition(LaunchConfiguration("rviz")),
         ),
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            arguments=["-d", rviz_far_path],
+            parameters=[{"use_sim_time": False}],
+            condition=IfCondition(LaunchConfiguration("rviz")),
+        ),
+        # Node(
+        #     package="mission_control",
+        #     executable="mission_control",
+        #     name="mission_control",
+        #     output="screen",
+        # ),
     ]
 
     return LaunchDescription(nodes)
-
-
-def _pkg_exists(pkg):
-    try:
-        get_package_share_directory(pkg)
-        return True
-    except Exception:
-        return False

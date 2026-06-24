@@ -40,6 +40,7 @@ _stack_pattern() {
         sim)         echo "sim.launch.py" ;;
         nav)         echo "navigation.launch.py" ;;
         explore)     echo "exploration.launch.py" ;;
+        planners)    echo "far_tare.launch.py" ;;
         dlio)        echo "dlio.launch.py" ;;
         resple)      echo "resple.launch.py" ;;
         detect)      echo "object_detection" ;;
@@ -240,6 +241,9 @@ case "$CMD" in
     nav)
         _run nav ros2 launch a2_ros navigation.launch.py rviz:=$RVIZ
         ;;
+    planners)
+        _run planners ros2 launch a2_ros far_tare.launch.py rviz:=$RVIZ
+        ;;
     explore)
         _run explore ros2 launch a2_ros exploration.launch.py rviz:=$RVIZ
         ;;
@@ -323,7 +327,7 @@ case "$CMD" in
     ps)
         # Show which managed stacks are currently running, with their PIDs.
         FOUND=false
-        for s in sim nav explore dlio resple detect foxglove plotjuggler; do
+        for s in sim nav explore planners dlio resple detect foxglove plotjuggler; do
             PIDS="$(_stack_pids "$(_stack_pattern "$s")" | tr '\n' ' ')"
             if [[ -n "${PIDS// }" ]]; then
                 info "$(printf '%-12s' "$s") ${PIDS}"
@@ -340,7 +344,7 @@ case "$CMD" in
             PAT="$(_stack_pattern "$TARGET")" || { error "Unknown stack: $TARGET"; exit 1; }
             _kill_stale "$PAT"
         else
-            for s in sim nav explore dlio resple detect foxglove plotjuggler; do
+            for s in sim nav explore planners dlio resple detect foxglove plotjuggler; do
                 _kill_stale "$(_stack_pattern "$s")"
             done
         fi

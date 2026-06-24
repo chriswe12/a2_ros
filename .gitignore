@@ -6,6 +6,7 @@ build/
 install/
 log/
 bags/
+maps/
 *.pyc
 __pycache__/
 
