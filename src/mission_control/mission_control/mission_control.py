@@ -78,7 +78,7 @@ class MissionControlNode(Node):
         self.get_logger().warn("Initial wait over → switching to EXPLORING")
         self.state = RobotState.EXPLORING
 
-    def exploration_complete_callback(self, msg: Bool)
+    def exploration_complete_callback(self, msg: Bool):
         if msg.data:
             self.get_logger().warn("Received exploration_complete → switching to DONE")
             self.send_save_map_request()
