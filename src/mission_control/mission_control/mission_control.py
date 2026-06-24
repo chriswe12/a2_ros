@@ -66,6 +66,7 @@ class MissionControlNode(Node):
             self.mission_timeout_s, self.on_mission_timeout
         )
         self.start_mission_timer = self.create_timer(5.0, self.start_mission)
+        self.map_save_timer = self.create_timer(30.0, self.periodic_map_save)
 
     # def odom_callback(self, msg: Odometry):
     #     self.current_position = msg.pose.pose.position
@@ -103,6 +104,11 @@ class MissionControlNode(Node):
         future = self.client.call_async(req)
         future.add_done_callback(self.save_map_response_callback)
         self.get_logger().info("Sent request to save map...")
+
+    def periodic_map_save(self):
+        if self.state == RobotState.EXPLORING:
+            self.get_logger().info("Periodic map save (every 30s)...")
+            self.send_save_map_request()
 
     def save_map_response_callback(self, future):
         try:
