@@ -47,7 +47,7 @@ def generate_launch_description():
             name='RESPLE',
             emulate_tty=True,
             output='both',
-            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool)}],
+            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool), 'pcd_save_path': pcd_path}],
             arguments=['--ros-args', '--log-level', 'INFO'],
         ),
 
@@ -57,7 +57,7 @@ def generate_launch_description():
             name='Mapping',
             emulate_tty=True,
             output='both',
-            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool)}],
+            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool), 'pcd_save_path': pcd_path}],
             arguments=['--ros-args', '--log-level', 'INFO'],
         ),
 
@@ -67,7 +67,7 @@ def generate_launch_description():
             name='MapSaving',
             emulate_tty=True,
             output='both',
-            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool), 'pcd_save_path': pcd_path}], # ! param override does not work
+            parameters=[a2_params, {'use_sim_time': ParameterValue(use_sim_time, value_type=bool), 'pcd_save_path': pcd_path}],
             arguments=['--ros-args', '--log-level', 'INFO'],
             condition=IfCondition(map_saving_node),
         ),
