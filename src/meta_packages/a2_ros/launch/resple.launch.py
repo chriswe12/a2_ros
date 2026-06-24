@@ -23,7 +23,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 from datetime import datetime
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-pcd_path = f"/a2_ros/bags/maps/global_map_{timestamp}.pcd"
+pcd_path = f"/a2_ros/bags/global_map_{timestamp}.pcd"
 
 
 def generate_launch_description():
