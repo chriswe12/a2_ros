@@ -89,7 +89,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'scanVoxelSize':       0.05,
-                'decayTime':           5.0,
+                'decayTime':           20.0,
                 'noDecayDis':          2.0,
                 'clearingDis':         8.0,
                 'useSorting':          True,
@@ -125,7 +125,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'scanVoxelSize':        0.1,
-                'decayTime':            5.0,
+                'decayTime':            100.0,
                 'noDecayDis':          2.0,
                 'clearingDis':          30.0,
                 'useSorting':           True,
