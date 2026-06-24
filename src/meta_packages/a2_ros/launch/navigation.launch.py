@@ -66,7 +66,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'scanVoxelSize':       0.05,
-                'decayTime':           10.0,
+                'decayTime':           5.0,
                 'noDecayDis':          0.0,
                 'clearingDis':         8.0,
                 'useSorting':          True,
@@ -102,7 +102,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'scanVoxelSize':        0.1,
-                'decayTime':            10.0,
+                'decayTime':            5.0,
                 'noDecayDis':           0.0,
                 'clearingDis':          30.0,
                 'useSorting':           True,
@@ -148,24 +148,24 @@ def generate_launch_description():
                 'pointPerPathThre':    2,
                 'minRelZ':             -0.5,
                 'maxRelZ':             0.8,
-                'maxSpeed':            0.5,
-                # 'dirWeight':           0.4, # 0.1, higher to avoid too often candidate switching
+                'maxSpeed':            0.5, #here the params for local planner path start, above height obstacle tuning
+                # Higher values can reduce frequent candidate switching.
                 'dirWeight':           0.1,
                 'dirThre':             90.0,
                 'dirToVehicle':        False,
-                'pathScale':           1.0,
-                'minPathScale':        0.75,
-                'pathScaleStep':       0.25, # smaller step to avoid too often candidate switching
+                'pathScale':           0.5,
+                'minPathScale':        0.5,
+                'pathScaleStep':       0.25,
                 'pathScaleBySpeed':    True,
                 'minPathRange':        1.0,
-                'pathRangeStep':       0.5, # unchanged, smaller step to avoid too often candidate switching
+                'pathRangeStep':       0.5,
                 'pathRangeBySpeed':    True,
                 'pathCropByGoal':      True,
                 'autonomyMode':        True,
                 'autonomySpeed':       1.0,
                 'joyToSpeedDelay':     2.0,
                 'joyToCheckObstacleDelay': 5.0,
-                'goalClearRange':      0.4, # can be larger e.g. 0.6 to avoid sudden local replanning
+                'goalClearRange':      0.6, # can be larger e.g. 0.6 to avoid sudden local replanning
                 'goalX':               0.0,
                 'goalY':               0.0,
             }],
@@ -188,8 +188,8 @@ def generate_launch_description():
                 'maxSpeed':         0.5,
                 'maxAccel':         1.0, # 2.0, lower accel for smoother control
                 'switchTimeThre':   1.0,
-                'dirDiffThre':      0.1, # decelerates to 0 if yaw error is above this thre
-                'stopDisThre':      0.3,
+                'dirDiffThre':      0.25, # decelerates to 0 if yaw error is above this thre
+                'stopDisThre':      0.1,
                 'slowDwnDisThre':   0.6,
                 'useInclRateToSlow': False,
                 'inclRateThre':     120.0,
