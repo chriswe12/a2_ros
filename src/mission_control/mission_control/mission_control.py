@@ -23,7 +23,7 @@ class MissionControlNode(Node):
         self.get_logger().info("Starting mission'control...")
 
         # params
-        self.declare_parameter("mission_timeout_s", 600.0)
+        self.declare_parameter("mission_timeout_s", 20.0)
         self.mission_timeout_s = float(self.get_parameter("mission_timeout_s").value)  # type: ignore
 
         # state
@@ -79,7 +79,7 @@ class MissionControlNode(Node):
         self.state = RobotState.EXPLORING
 
     def exploration_complete_callback(self, msg: Bool):
-        if msg.data:
+        if msg.data and self.state == RobotState.EXPLORING:
             self.get_logger().warn("Received exploration_complete → switching to DONE")
             self.send_save_map_request()
             self.state = RobotState.DONE
