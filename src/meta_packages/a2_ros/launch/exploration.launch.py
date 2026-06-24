@@ -62,7 +62,7 @@ def generate_launch_description():
             parameters=[{
                 'scanVoxelSize':       0.05,
                 'decayTime':           5.0,
-                'noDecayDis':          0.0,
+                'noDecayDis':          2.0,
                 'clearingDis':         8.0,
                 'useSorting':          True,
                 'quantileZ':           0.25,
@@ -98,7 +98,7 @@ def generate_launch_description():
             parameters=[{
                 'scanVoxelSize':        0.1,
                 'decayTime':            5.0,
-                'noDecayDis':           0.0,
+                'noDecayDis':          2.0,
                 'clearingDis':          30.0,
                 'useSorting':           True,
                 'quantileZ':            0.25,
@@ -182,7 +182,7 @@ def generate_launch_description():
                 'maxSpeed':         0.5,
                 'maxAccel':         1.0, # 2.0, lower accel for smoother control
                 'switchTimeThre':   1.0,
-                'dirDiffThre':      0.25, # decelerates to 0 if yaw error is above this thre
+                'dirDiffThre':      0.15, # decelerates to 0 if yaw error is above this thre
                 'stopDisThre':      0.1,
                 'slowDwnDisThre':   0.6,
                 'useInclRateToSlow': False,
