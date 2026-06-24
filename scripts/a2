@@ -111,7 +111,8 @@ Robot:
   sit                Command robot to sit     (mode=1)
   keyboard           Keyboard teleop -> /cmd_vel (robot must be in walk mode)
   nav   [--rviz]     Launch navigation stack
-  explore [--rviz]   Launch autonomous exploration (TARE)
+  explore [--rviz] [--config <name|path>]
+                     Launch autonomous exploration (TARE); default config is tare_a2
   dlio  [--rviz]     Launch DLIO LiDAR-inertial odometry
   resple [--rviz]    Launch RESPLE LiDAR-inertial odometry
   detect             Launch object detection (YOLO, CPU); _real launch on robot
@@ -145,6 +146,7 @@ DLIO=false
 HEADLESS=false
 YES=false
 SCENE=""
+CONFIG=""
 JOBS=""
 ARGS=()
 while [[ $# -gt 0 ]]; do
@@ -161,6 +163,10 @@ while [[ $# -gt 0 ]]; do
             if [[ -z "${2:-}" ]]; then error "--scene requires a value (e.g. scene_maze.xml)"; exit 1; fi
             SCENE="$2"; shift 2 ;;
         --scene=*) SCENE="${1#*=}"; shift ;;
+        --config)
+            if [[ -z "${2:-}" ]]; then error "--config requires a value (e.g. indoor)"; exit 1; fi
+            CONFIG="$2"; shift 2 ;;
+        --config=*) CONFIG="${1#*=}"; shift ;;
         *)      ARGS+=("$1"); shift ;;
     esac
 done
@@ -241,7 +247,9 @@ case "$CMD" in
         _run nav ros2 launch a2_ros navigation.launch.py rviz:=$RVIZ
         ;;
     explore)
-        _run explore ros2 launch a2_ros exploration.launch.py rviz:=$RVIZ
+        EXPLORE_ARGS=(rviz:=$RVIZ)
+        [ -n "$CONFIG" ] && EXPLORE_ARGS+=(config:="$CONFIG")
+        _run explore ros2 launch a2_ros exploration.launch.py "${EXPLORE_ARGS[@]}"
         ;;
     dlio)
         DLIO_ARGS=(rviz:=$RVIZ)
