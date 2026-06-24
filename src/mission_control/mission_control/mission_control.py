@@ -78,10 +78,11 @@ class MissionControlNode(Node):
         self.get_logger().warn("Initial wait over → switching to EXPLORING")
         self.state = RobotState.EXPLORING
 
-    def exploration_complete_callback(self, msg: Bool):
-        self.get_logger().warn("Received exploration_complete → switching to DONE")
-        self.send_save_map_request()
-        self.state = RobotState.DONE
+    def exploration_complete_callback(self, msg: Bool)
+        if msg.data:
+            self.get_logger().warn("Received exploration_complete → switching to DONE")
+            self.send_save_map_request()
+            self.state = RobotState.DONE
 
     def on_mission_timeout(self):
         self.timeout_timer.cancel()
