@@ -12,6 +12,7 @@ from geometry_msgs.msg import Point
 from std_srvs.srv import Empty as EmptySrv
 from std_msgs.msg import Empty
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from std_msgs.msg import Bool
 
 
 class RobotState(Enum):
@@ -73,6 +74,9 @@ class MissionControlNode(Node):
         )
         self.sub_return_trigger = self.create_subscription(
             Empty, "/return_home_trigger", self.return_home_callback, 10
+        )
+        self.sub_exploration_complte = self.create_subscription(
+            Bool, "/exploration_finish", self.exploration_complete_callback, 10
         )
         # TODO: detection sub
 
@@ -185,12 +189,17 @@ class MissionControlNode(Node):
         # TODO
         pass
 
+    def exploration_complete_callback(self, msg: Bool):
+        self.get_logger().info("Received exploration_complete → switching to DONE")
+        self.state = RobotState.DONE
+        self.on_state_change()  # Force state change action
+
     def save_map_callback(self, msg):
         self.send_save_map_request()
 
     def tare_waypoint_callback(self, msg: PointStamped):
         self.last_waypoint_tare = msg
-        if self.state in [RobotState.EXPLORING]:
+        if self.state in [RobotState.EXPLORING, RobotState.DONE]:
             self.pub_waypoint.publish(msg)
 
     def far_waypoint_callback(self, msg: PointStamped):
