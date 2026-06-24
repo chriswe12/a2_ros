@@ -31,26 +31,54 @@ The robot will begin exploring autonomously.
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetParameter
+
+
+def _resolve_tare_config(context):
+    a2_ros_dir = get_package_share_directory('a2_ros')
+    tare_dir = get_package_share_directory('tare_planner')
+    config = LaunchConfiguration('config').perform(context)
+
+    if os.path.isabs(config) or os.sep in config:
+        tare_config = config
+    else:
+        name = config[:-5] if config.endswith('.yaml') else config
+        a2_config = os.path.join(a2_ros_dir, 'config', 'autonomy', name + '.yaml')
+        upstream_config = os.path.join(tare_dir, 'config', name + '.yaml')
+        tare_config = a2_config if os.path.exists(a2_config) else upstream_config
+
+    return [
+        Node(
+            package='tare_planner',
+            executable='tare_planner_node',
+            name='tare_planner_node',
+            output='screen',
+            parameters=[tare_config],
+        )
+    ]
 
 
 def generate_launch_description():
     description_dir = get_package_share_directory('a2_description')
     a2_ros_dir      = get_package_share_directory('a2_ros')
     rviz_path        = os.path.join(a2_ros_dir, 'rviz', 'exploration.rviz')
-    tare_config      = os.path.join(a2_ros_dir, 'config', 'autonomy', 'tare_a2.yaml')
-
     rviz_arg = DeclareLaunchArgument(
         'rviz',
         default_value='true',
         description='Launch RViz2'
     )
+    config_arg = DeclareLaunchArgument(
+        'config',
+        default_value='tare_a2',
+        description='TARE config name or path. Names resolve first in a2_ros/config/autonomy, then tare_planner/config.'
+    )
 
     nodes = [
         rviz_arg,
+        config_arg,
         SetParameter(name='use_sim_time', value=False),
 
         # ---- terrain analysis (local map) ----
@@ -203,13 +231,7 @@ def generate_launch_description():
         ),
 
         # ---- TARE planner (autonomous exploration) ----
-        Node(
-            package='tare_planner',
-            executable='tare_planner_node',
-            name='tare_planner_node',
-            output='screen',
-            parameters=[tare_config],
-        ),
+        OpaqueFunction(function=_resolve_tare_config),
 
 
         # ---- RViz ----
