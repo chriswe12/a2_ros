@@ -23,7 +23,7 @@ class MissionControlNode(Node):
         self.get_logger().info("Starting mission'control...")
 
         # params
-        self.declare_parameter("mission_timeout_s", 20.0)
+        self.declare_parameter("mission_timeout_s", 600.0)
         self.mission_timeout_s = float(self.get_parameter("mission_timeout_s").value)  # type: ignore
 
         # state
