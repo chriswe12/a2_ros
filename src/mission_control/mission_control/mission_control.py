@@ -142,7 +142,9 @@ class MissionControlNode(Node):
             (self.current_position.x - self.home_position.x) ** 2
             + (self.current_position.y - self.home_position.y) ** 2
         )
-        self.get_logger().info(f"Homing check: distance to home = {dist:.2f} m", throttle_duration_sec=2.0)
+        self.get_logger().info(
+            f"Homing check: distance to home = {dist:.2f} m", throttle_duration_sec=2.0
+        )
 
         if dist <= 2.0:
             self.get_logger().warn(
